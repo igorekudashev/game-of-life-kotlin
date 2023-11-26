@@ -1,3 +1,5 @@
+package base
+
 enum class Direction(
     val deltaX: Int,
     val deltaY: Int

@@ -1,17 +1,17 @@
-import java.lang.Runnable
+package base
+
 import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
-private const val maxSpeed: Int = 1000
+private const val MAX_SPEED: Int = 1000
 
-class RunnableRepeater(
+class Repeater(
     private var speed: Int,
-    private val runnable: Runnable
+    private val task: () -> Unit
 ) {
 
-    private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+    private val executor = Executors.newSingleThreadScheduledExecutor()
     private lateinit var future: ScheduledFuture<*>
 
     init {
@@ -19,7 +19,7 @@ class RunnableRepeater(
     }
 
     fun setSpeed(newSpeed: Int) : Int {
-        speed = newSpeed.coerceIn(0, maxSpeed)
+        speed = newSpeed.coerceIn(0, MAX_SPEED)
         future.cancel(false)
         startJob()
         println("New Speed $speed")
@@ -29,7 +29,7 @@ class RunnableRepeater(
     private fun startJob() {
         if (speed > 0) {
             val delay = 1000L / speed
-            future = executor.scheduleAtFixedRate(runnable, 0, delay, TimeUnit.MILLISECONDS)
+            future = executor.scheduleAtFixedRate(task, 0, delay, TimeUnit.MILLISECONDS)
         }
     }
 }

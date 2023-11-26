@@ -1,10 +1,9 @@
-class Cell(
-    val state: CellState
-) {
-}
+import base.AbstractCell
+import java.awt.Color
 
-enum class CellState {
+class Cell : AbstractCell() {
 
-    DEAD,
-    ALIVE
+    override fun getColor(): Color {
+        return Color.CYAN
+    }
 }

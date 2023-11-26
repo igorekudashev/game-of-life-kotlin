@@ -1,6 +1,6 @@
-import GameSetting.Companion.loadProperties
+import base.GameSetting.Companion.loadProperties
 
 fun main(args: Array<String>) {
     loadProperties(args)
-    GameWindow(World())
+    GameOfLifeWindow()
 }
