@@ -15,11 +15,11 @@ class GameOfLifeKeyListener(
                 gameWindow.repaint()
             }
             GameKey.KEY_PLUS -> {
-                val worldUpdatesPerSecond = world.changeUpdateSpeed(50)
+                val worldUpdatesPerSecond = world.changeUpdateSpeed(1)
                 gameWindow.setFps(worldUpdatesPerSecond)
             }
             GameKey.KEY_MINUS -> {
-                val worldUpdatesPerSecond = world.changeUpdateSpeed(-50)
+                val worldUpdatesPerSecond = world.changeUpdateSpeed(-1)
                 gameWindow.setFps(worldUpdatesPerSecond)
             }
             GameKey.KEY_C -> {

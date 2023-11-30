@@ -1,4 +1,5 @@
 import base.AbstractWorld
+import base.ChainedWorldUpdateAction
 import java.util.*
 import java.util.concurrent.*
 
@@ -8,7 +9,9 @@ class GameOfLifeWorld : AbstractWorld<Cell>() {
         return Cell()
     }
 
-    override fun getWorldUpdateTask(permission: UUID): ForkJoinTask<*> {
-        return FullAction(this, currentTickGrid.keys.toList(), permission)
+    override fun getWorldUpdateTask(permission: UUID): ChainedWorldUpdateAction<GameOfLifeWorld> {
+        return ChainedWorldUpdateAction(this, permission, currentTickGrid)
+            .addTask(TestTask())
+            .addTask(TestAction())
     }
 }

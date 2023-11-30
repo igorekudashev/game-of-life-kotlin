@@ -20,6 +20,8 @@ abstract class AbstractWorld<CELL> where CELL : AbstractCell {
 
     var currentTickGrid: Map<Location, CELL> = HashMap(); private set
 
+    private val dummy: Any = Any()
+    private val collisions: MutableMap<Location, Any?> = ConcurrentHashMap()
     private val lock: PermissionLock = PermissionLock()
     private val repeater = Repeater(DEFAULT_UPDATE_SPEED) { update() }
     private val pool: ForkJoinPool = ForkJoinPool(worldThreads)
@@ -57,7 +59,13 @@ abstract class AbstractWorld<CELL> where CELL : AbstractCell {
         }
     }
 
-    fun addCell(location: Location, cell: CELL) {
+    fun removeCellNoNextTick(location: Location) {
+        lock.run {
+            (nextTickGrid as MutableMap).remove(location)
+        }
+    }
+
+    fun addCell(location: Location, cell: CELL) { // TODO: Добавить коллизии
         prepare { next, permission ->
             next.putAll(currentTickGrid)
             next[location] = cell
@@ -67,6 +75,11 @@ abstract class AbstractWorld<CELL> where CELL : AbstractCell {
     fun addCellNoNextTick(location: Location, cell: CELL) {
         lock.run {
             (nextTickGrid as MutableMap)[location] = cell
+//            if (nextTickGrid.containsKey(location)) {
+//                collisions[location] = dummy // TODO: выяснить почему если ставишь нулл то не работает
+//            } else {
+//                (nextTickGrid as MutableMap)[location] = cell
+//            }
         }
     }
 
@@ -80,11 +93,12 @@ abstract class AbstractWorld<CELL> where CELL : AbstractCell {
         }
     }
 
-    abstract fun getWorldUpdateTask(permission: UUID) : ForkJoinTask<*>
+    abstract fun getWorldUpdateTask(permission: UUID) : ChainedWorldUpdateAction<out AbstractWorld<out CELL>>
 
     private fun update() {
         prepare { next, permission ->
             val task = getWorldUpdateTask(permission)
+            // .addTask(CollisionResolverTask().withInput(collisions.keys))
             pool.invoke(task)
             count.incrementAndGet()
         }
@@ -95,6 +109,7 @@ abstract class AbstractWorld<CELL> where CELL : AbstractCell {
             action.invoke(nextTickGrid as MutableMap, permission)
             currentTickGrid = nextTickGrid
             nextTickGrid = getNewNextTickGrid()
+            collisions.clear()
         }
     }
 
