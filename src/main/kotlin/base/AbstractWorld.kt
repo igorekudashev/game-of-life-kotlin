@@ -99,7 +99,8 @@ abstract class AbstractWorld<CELL> where CELL : AbstractCell {
         prepare { next, permission ->
             val task = getWorldUpdateTask(permission)
             // .addTask(CollisionResolverTask().withInput(collisions.keys))
-            pool.invoke(task)
+//            pool.invoke(task)
+            task.update()
             count.incrementAndGet()
         }
     }

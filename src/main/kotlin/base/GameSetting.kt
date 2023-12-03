@@ -18,7 +18,7 @@ class GameSetting private constructor() {
             "worldThreads" to Companion::worldThreads
         )
 
-        var worldWidth: Int = 400; private set
+        var worldWidth: Int = 200; private set
         var worldHeight: Int = 200; private set
         var cellSize: Int = 4; private set
         var borderSize: Int = 0; private set

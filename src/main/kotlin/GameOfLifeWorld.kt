@@ -10,8 +10,8 @@ class GameOfLifeWorld : AbstractWorld<Cell>() {
     }
 
     override fun getWorldUpdateTask(permission: UUID): ChainedWorldUpdateAction<GameOfLifeWorld> {
-        return ChainedWorldUpdateAction(this, permission, currentTickGrid)
-            .addTask(TestTask())
+        return ChainedWorldUpdateAction(this, permission)
+            .addTask(TestTask(), currentTickGrid)
             .addTask(TestAction())
     }
 }

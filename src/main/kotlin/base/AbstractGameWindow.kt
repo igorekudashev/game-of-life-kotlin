@@ -4,25 +4,28 @@ import base.GameSetting.Companion.getScreenSize
 import base.GameSetting.Companion.maxFps
 import java.awt.Color
 import java.awt.Graphics
+import java.awt.Image
+import java.awt.image.BufferedImage
+import java.awt.image.BufferedImage.TYPE_INT_ARGB
 import java.awt.image.VolatileImage
 import javax.swing.JFrame
 
 abstract class AbstractGameWindow<CELL>(title: String, world: AbstractWorld<CELL>) : JFrame(title) where CELL : AbstractCell {
 
     protected val world: AbstractWorld<CELL>
-    private val repeater = Repeater(maxFps) { repaint() }
-    private val bufferImage: VolatileImage
+    private val repeater: Repeater
+    private val image: Image
 
     init {
         this.world = world
 
         defaultCloseOperation = EXIT_ON_CLOSE
-        background = Color.BLACK
         isResizable = false
         isVisible = true
         size = getScreenSize()
         addKeyListener(getGameKeyListener())
-        bufferImage = createVolatileImage(width, height)
+        image = BufferedImage(width, height, TYPE_INT_ARGB)
+        repeater = Repeater(maxFps) { repaint() }
     }
 
     abstract fun paintCell(graphics: Graphics, cell: CELL, x: Int, y: Int)
@@ -34,7 +37,8 @@ abstract class AbstractGameWindow<CELL>(title: String, world: AbstractWorld<CELL
     }
 
     final override fun paint(graphics: Graphics) {
-        val g2d = bufferImage.graphics
+        val g2d = image.graphics
+        g2d.color = Color.BLACK
 
         g2d.fillRect(0, 0, width, height)
         val grid = world.currentTickGrid
@@ -49,7 +53,8 @@ abstract class AbstractGameWindow<CELL>(title: String, world: AbstractWorld<CELL
             }
         }
 
-        graphics.drawImage(bufferImage, 0, 0, this)
+//        graphics.drawImage(bufferImage, 0, 0, this)
+        graphics.drawImage(image, 0, 0, this)
         g2d.dispose()
 //        println("Repaint..")
     }
