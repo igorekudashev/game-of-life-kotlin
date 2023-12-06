@@ -13,14 +13,11 @@ private const val min: Int = 2500
 private fun <K, V> splitMap(map: Map<K, V>, size: Int) : List<Map<K, V>> {
     val result = mutableListOf<Map<K, V>>()
     var current = HashMap<K, V>()
-    var count = 0;
     map.forEach { (k, v) ->
-        count++
         current[k] = v
-        if (count == size) {
+        if (current.size == size) {
             result.add(current)
             current = HashMap()
-            count = 0
         }
     }
     if (current.isNotEmpty()) {
@@ -32,12 +29,11 @@ private fun <K, V> splitMap(map: Map<K, V>, size: Int) : List<Map<K, V>> {
 class TestTask : LateInitInputRecursiveTask<Map<Location, Cell>, Map<Location, Int>, GameOfLifeWorld>() {
 
     override fun requiresFork(): Boolean {
-//        return false
         return input.size > min
     }
 
     override fun getSubTasks(): List<TestTask> {
-        return splitMap(input, min).map {
+        return splitMap(input, 500).map {
             val task = TestTask()
             task.prepare(context, it)
             task
@@ -50,7 +46,7 @@ class TestTask : LateInitInputRecursiveTask<Map<Location, Cell>, Map<Location, I
             var aliveNeighbours = 0
             for (direction in Direction.values()) {
                 val neighbourLocation = location.getRelative(direction)
-                val neighbourCell = input[neighbourLocation]
+                val neighbourCell = context.world.getCellAt(neighbourLocation)
                 if (neighbourCell != null) {
                     aliveNeighbours++
                 } else {
@@ -74,12 +70,11 @@ class TestTask : LateInitInputRecursiveTask<Map<Location, Cell>, Map<Location, I
 
 class TestAction: LateInitInputRecursiveAction<Map<Location, Int>, GameOfLifeWorld>() {
     override fun requiresFork(): Boolean {
-//        return false
         return input.size > min
     }
 
     override fun getSubTasks(): List<TestAction> {
-        return splitMap(input, min).map {
+        return splitMap(input, 500).map {
             val task = TestAction()
             task.prepare(context, it)
             task
