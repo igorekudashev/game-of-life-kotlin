@@ -29,7 +29,7 @@ class ChainedWorldUpdateAction<WORLD>(
             val task = taskChain[i]
             val input = inputs[i]
             task.prepare(context, input ?: temp)
-            temp = task.invoke()
+            temp = task.fork().join()
         }
     }
 }

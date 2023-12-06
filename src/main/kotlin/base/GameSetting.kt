@@ -18,9 +18,9 @@ class GameSetting private constructor() {
             "worldThreads" to Companion::worldThreads
         )
 
-        var worldWidth: Int = 200; private set
-        var worldHeight: Int = 200; private set
-        var cellSize: Int = 4; private set
+        var worldWidth: Int = 800; private set
+        var worldHeight: Int = 400; private set
+        var cellSize: Int = 2; private set
         var borderSize: Int = 0; private set
 //        var neighbourCellsToLive: IntSetImitator = IntSetImitator(2, 3, 4, 5, 6, 7); private set
 //        var neighbourCellsToBeBorn: IntSetImitator = IntSetImitator(3); private set

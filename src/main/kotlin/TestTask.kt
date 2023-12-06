@@ -14,15 +14,17 @@ private fun <K, V> splitMap(map: Map<K, V>, size: Int) : List<Map<K, V>> {
     val result = mutableListOf<Map<K, V>>()
     var current = HashMap<K, V>()
     var count = 0;
-    for ((k, v) in map.entries) {
-        val a = count % size
-        if (a == size - 1) {
+    map.forEach { (k, v) ->
+        count++
+        current[k] = v
+        if (count == size) {
             result.add(current)
             current = HashMap()
-        } else {
-            current[k] = v
+            count = 0
         }
-        count++
+    }
+    if (current.isNotEmpty()) {
+        result.add(current)
     }
     return result
 }
@@ -30,12 +32,11 @@ private fun <K, V> splitMap(map: Map<K, V>, size: Int) : List<Map<K, V>> {
 class TestTask : LateInitInputRecursiveTask<Map<Location, Cell>, Map<Location, Int>, GameOfLifeWorld>() {
 
     override fun requiresFork(): Boolean {
-        return false
-//        return input.size > min
+        return input.size > min
     }
 
     override fun getSubTasks(): List<TestTask> {
-        return splitMap(input, 10).map {
+        return splitMap(input, 500).map {
             val task = TestTask()
             task.prepare(context, it)
             task
@@ -72,12 +73,11 @@ class TestTask : LateInitInputRecursiveTask<Map<Location, Cell>, Map<Location, I
 
 class TestAction: LateInitInputRecursiveAction<Map<Location, Int>, GameOfLifeWorld>() {
     override fun requiresFork(): Boolean {
-        return false
-//        return input.size > min
+        return input.size > min
     }
 
     override fun getSubTasks(): List<TestAction> {
-        return splitMap(input, 10).map {
+        return splitMap(input, 500).map {
             val task = TestAction()
             task.prepare(context, it)
             task
