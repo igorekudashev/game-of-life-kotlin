@@ -32,11 +32,12 @@ private fun <K, V> splitMap(map: Map<K, V>, size: Int) : List<Map<K, V>> {
 class TestTask : LateInitInputRecursiveTask<Map<Location, Cell>, Map<Location, Int>, GameOfLifeWorld>() {
 
     override fun requiresFork(): Boolean {
+//        return false
         return input.size > min
     }
 
     override fun getSubTasks(): List<TestTask> {
-        return splitMap(input, 500).map {
+        return splitMap(input, min).map {
             val task = TestTask()
             task.prepare(context, it)
             task
@@ -66,18 +67,19 @@ class TestTask : LateInitInputRecursiveTask<Map<Location, Cell>, Map<Location, I
 
     override fun merge(outputs: List<Map<Location, Int>>): Map<Location, Int> {
         return outputs.stream().flatMap {
-            it!!.entries.stream()
-        }.collect(Collectors.toMap({ entry -> entry.key }, { entry -> entry.value }, Int::plus))
+            it.entries.stream()
+        }.collect(Collectors.toMap({ it.key }, { it.value }, Int::plus))
     }
 }
 
 class TestAction: LateInitInputRecursiveAction<Map<Location, Int>, GameOfLifeWorld>() {
     override fun requiresFork(): Boolean {
+//        return false
         return input.size > min
     }
 
     override fun getSubTasks(): List<TestAction> {
-        return splitMap(input, 500).map {
+        return splitMap(input, min).map {
             val task = TestAction()
             task.prepare(context, it)
             task

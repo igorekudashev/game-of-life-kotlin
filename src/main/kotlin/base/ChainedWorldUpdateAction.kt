@@ -1,11 +1,13 @@
 package base
 
 import java.util.*
+import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.ForkJoinTask
 import java.util.concurrent.RecursiveAction
 import java.util.concurrent.RecursiveTask
 
 val DUMMY = Any()
+private val pool: ForkJoinPool = ForkJoinPool(GameSetting.worldThreads)
 
 class ChainedWorldUpdateAction<WORLD>(
     world: WORLD,
@@ -29,7 +31,8 @@ class ChainedWorldUpdateAction<WORLD>(
             val task = taskChain[i]
             val input = inputs[i]
             task.prepare(context, input ?: temp)
-            temp = task.fork().join()
+            temp = pool.invoke(task as ForkJoinTask<*>)
+//            temp = task.fork().join()
         }
     }
 }
