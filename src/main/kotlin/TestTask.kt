@@ -26,14 +26,14 @@ private fun <K, V> splitMap(map: Map<K, V>, size: Int) : List<Map<K, V>> {
     return result
 }
 
-class TestTask : LateInitInputRecursiveTask<Map<Location, Cell>, Map<Location, Int>, GameOfLifeWorld>() {
+class TestTask : LateInitInputRecursiveTask<List<Location>, Map<Location, Int>, GameOfLifeWorld>() {
 
     override fun requiresFork(): Boolean {
         return input.size > min
     }
 
     override fun getSubTasks(): List<TestTask> {
-        return splitMap(input, 500).map {
+        return input.chunked(2500).map {
             val task = TestTask()
             task.prepare(context, it)
             task
@@ -42,7 +42,7 @@ class TestTask : LateInitInputRecursiveTask<Map<Location, Cell>, Map<Location, I
 
     override fun process(): Map<Location, Int> {
         val candidatesToReborn = HashMap<Location, Int>()
-        input.forEach { (location, cell) ->
+        input.forEach { location ->
             var aliveNeighbours = 0
             for (direction in Direction.values()) {
                 val neighbourLocation = location.getRelative(direction)
@@ -55,7 +55,7 @@ class TestTask : LateInitInputRecursiveTask<Map<Location, Cell>, Map<Location, I
             }
 //            if (neighbourCellsToLive.contains(aliveNeighbours)) {
             if (aliveNeighbours in neighbourCellsToLive) {
-                context.world.addCellNoNextTick(location, cell)
+                context.world.addCellNoNextTick(location, context.world.getCellAt(location)!!)
             }
         }
         return candidatesToReborn

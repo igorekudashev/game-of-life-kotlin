@@ -1,5 +1,7 @@
 package base
 
+import GameOfLifeWorld
+import NewTestTask
 import base.GameSetting.Companion.worldHeight
 import base.GameSetting.Companion.worldThreads
 import base.GameSetting.Companion.worldWidth
@@ -28,6 +30,7 @@ abstract class AbstractWorld<CELL> where CELL : AbstractCell {
     private var nextTickGrid: Map<Location, CELL> = getNewNextTickGrid()
     private var updatesPerSecond: Int = DEFAULT_UPDATE_SPEED
     private var count: AtomicInteger = AtomicInteger(0)
+    private val uuu: NewTestTask = NewTestTask()
 
     init {
         randomize(50)
@@ -57,6 +60,10 @@ abstract class AbstractWorld<CELL> where CELL : AbstractCell {
                 }
             }
         }
+    }
+
+    fun poprikol() : MutableMap<Location, CELL> {
+        return nextTickGrid as MutableMap<Location, CELL>
     }
 
     fun removeCellNoNextTick(location: Location) {
@@ -97,10 +104,12 @@ abstract class AbstractWorld<CELL> where CELL : AbstractCell {
 
     private fun update() {
         prepare { next, permission ->
-            val task = getWorldUpdateTask(permission)
+//            val task = getWorldUpdateTask(permission)
             // .addTask(CollisionResolverTask().withInput(collisions.keys))
 //            pool.invoke(task)
-            task.update()
+//            task.update()
+            uuu.run(this as GameOfLifeWorld, permission)
+//            uuu.runGPU(this as GameOfLifeWorld, permission)
             count.incrementAndGet()
         }
     }

@@ -31,8 +31,8 @@ class ChainedWorldUpdateAction<WORLD>(
             val task = taskChain[i]
             val input = inputs[i]
             task.prepare(context, input ?: temp)
-//            temp = pool.invoke(task as ForkJoinTask<*>)
-            temp = task.invoke()
+            temp = pool.invoke(task as ForkJoinTask<*>)
+//            temp = task.invoke()
         }
     }
 }
