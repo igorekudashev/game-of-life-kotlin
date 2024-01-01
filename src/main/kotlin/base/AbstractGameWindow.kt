@@ -14,7 +14,7 @@ abstract class AbstractGameWindow<CELL>(title: String, world: AbstractWorld<CELL
 
     protected val world: AbstractWorld<CELL>
     private val repeater: Repeater
-    private val image: Image
+    private val image = BufferedImage(GameSetting.worldWidth * GameSetting.cellSize, GameSetting.worldHeight * GameSetting.cellSize, TYPE_INT_ARGB)
 
     init {
         this.world = world
@@ -24,7 +24,6 @@ abstract class AbstractGameWindow<CELL>(title: String, world: AbstractWorld<CELL
         isVisible = true
         size = getScreenSize()
         addKeyListener(getGameKeyListener())
-        image = BufferedImage(width, height, TYPE_INT_ARGB)
         repeater = Repeater(maxFps) { repaint() }
     }
 
@@ -41,10 +40,10 @@ abstract class AbstractGameWindow<CELL>(title: String, world: AbstractWorld<CELL
         g2d.color = Color.BLACK
 
         g2d.fillRect(0, 0, width, height)
-        val grid = world.currentTickGrid
+        val grid = world.getCurrentTickGrid()
         for (i in 0 until GameSetting.worldWidth) {
             for (j in 0 until GameSetting.worldHeight) {
-                val cell = grid[Location(i, j)]
+                val cell = grid[getIndexByLocation(i, j)]
                 val x = i * GameSetting.cellSize
                 val y = j * GameSetting.cellSize
                 if (cell != null) {

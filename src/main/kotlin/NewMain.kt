@@ -139,12 +139,13 @@ object NewMain {
             imageData = (_image.raster.dataBuffer as DataBufferInt).data
             width = _width
             height = _height
-            val executionMode = System.getProperty("com.aparapi.executionMode")
-            range = if (executionMode != null && executionMode == "JTP") {
-                Range.create(width * height, 4)
-            } else {
-                Range.create(width * height)
-            }
+            range = Range.create(width * height, 4)
+//            val executionMode = System.getProperty("com.aparapi.executionMode")
+//            range = if (executionMode != null && executionMode == "JTP") {
+//                Range.create(width * height, 4)
+//            } else {
+//                Range.create(width * height)
+//            }
             println("range = $range")
             fromBase = height * width
             toBase = 0

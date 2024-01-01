@@ -6,39 +6,61 @@ import base.GameSetting.Companion.worldHeight
 import base.GameSetting.Companion.worldThreads
 import base.GameSetting.Companion.worldWidth
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors
 import java.util.concurrent.ForkJoinPool
-import java.util.concurrent.ForkJoinTask
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
-import kotlin.collections.HashMap
 import kotlin.random.Random
 
 private const val DEFAULT_UPDATE_SPEED: Int = 1
 
+fun getIndexByLocation(x: Int, y: Int) : Int {
+    return normalizeY(y) * worldWidth + normalizeX(x)
+}
+
+fun getXByIndex(index: Int) : Int {
+    val y = getYByIndex(index)
+    return index - y * worldWidth
+}
+
+fun getYByIndex(index: Int) : Int {
+    return index / worldWidth
+}
+
+private fun normalizeX(x: Int) : Int {
+    return normalizeInt(x, worldWidth)
+}
+
+private fun normalizeY(y: Int) : Int {
+    return normalizeInt(y, worldHeight)
+}
+
 abstract class AbstractWorld<CELL> where CELL : AbstractCell {
 
-    var currentTickGrid: Map<Location, CELL> = HashMap(); private set
+    private var currentTickGrid: Array<CELL?>
+    private var nextTickGrid: Array<CELL?>
 
     private val dummy: Any = Any()
-    private val collisions: MutableMap<Location, Any?> = ConcurrentHashMap()
     private val lock: PermissionLock = PermissionLock()
-    private val repeater = Repeater(DEFAULT_UPDATE_SPEED) { update() }
+    private val repeater: Repeater
     private val pool: ForkJoinPool = ForkJoinPool(worldThreads)
-    private var nextTickGrid: Map<Location, CELL> = getNewNextTickGrid()
     private var updatesPerSecond: Int = DEFAULT_UPDATE_SPEED
     private var count: AtomicInteger = AtomicInteger(0)
     private val uuu: NewTestTask = NewTestTask()
+    var currentAliveCellIndices = ConcurrentLinkedQueue<Int>()
+    var nextAliveCellIndices = ConcurrentLinkedQueue<Int>()
 
     init {
-        randomize(50)
+        currentTickGrid = getArray()
+        nextTickGrid = getArray()
 
+        randomize(50)
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate({
             println("Method was called $count times in the last second")
             count.set(0)
         }, 0, 1, TimeUnit.SECONDS)
+        repeater = Repeater(DEFAULT_UPDATE_SPEED) { update() }
     }
 
     fun changeUpdateSpeed(deltaUpdateSpeed: Int) : Int {
@@ -48,86 +70,90 @@ abstract class AbstractWorld<CELL> where CELL : AbstractCell {
 
     abstract fun getRandomizedCell() : CELL
 
+    abstract fun getArray() : Array<CELL?>
+
     fun randomize(aliveCellChance: Int) {
         val normalizedChance = aliveCellChance.coerceIn(0, 100)
-        prepare { next, permission ->
-            for (x in 0 until worldWidth) {
-                for (y in 0 until worldHeight) {
-                    val location = Location(x, y)
-                    if (normalizedChance > Random.nextInt(100)) {
-                        next[location] = getRandomizedCell()
-                    }
+        for (x in 0 until worldWidth) {
+            for (y in 0 until worldHeight) {
+                if (normalizedChance > Random.nextInt(100)) {
+                    createRandomCellAt(getIndexByLocation(x, y))
                 }
             }
         }
-    }
-
-    fun poprikol() : MutableMap<Location, CELL> {
-        return nextTickGrid as MutableMap<Location, CELL>
-    }
-
-    fun removeCellNoNextTick(location: Location) {
-        lock.run {
-            (nextTickGrid as MutableMap).remove(location)
-        }
-    }
-
-    fun addCell(location: Location, cell: CELL) { // TODO: Добавить коллизии
-        prepare { next, permission ->
-            next.putAll(currentTickGrid)
-            next[location] = cell
-        }
-    }
-
-    fun addCellNoNextTick(location: Location, cell: CELL) {
-        lock.run {
-            (nextTickGrid as MutableMap)[location] = cell
-//            if (nextTickGrid.containsKey(location)) {
-//                collisions[location] = dummy // TODO: выяснить почему если ставишь нулл то не работает
-//            } else {
-//                (nextTickGrid as MutableMap)[location] = cell
+//        prepare { next, permission ->
+//            for (x in 0 until worldWidth) {
+//                for (y in 0 until worldHeight) {
+//                    if (normalizedChance > Random.nextInt(100)) {
+//                        println("try")
+//                        next[getIndexByLocation(x, y)] = getRandomizedCell()
+//                    }
+//                }
 //            }
-        }
+//        }
     }
 
-    fun getCellAt(location: Location) : CELL? {
-        return currentTickGrid[location]
+    fun createRandomCellAt(index: Int) {
+        addCellNoNextTick(index, getRandomizedCell())
+    }
+
+    fun addCellNoNextTick(x: Int, y: Int, cell: CELL) {
+        addCellNoNextTick(getIndexByLocation(x, y), cell)
+    }
+
+    fun addCellNoNextTick(index: Int, cell: CELL) {
+        nextTickGrid[index] = cell
+        nextAliveCellIndices.add(index)
+//        lock.run {
+//            nextTickGrid[index] = cell
+////            if (nextTickGrid.containsKey(location)) {
+////                collisions[location] = dummy // TODO: выяснить почему если ставишь нулл то не работает
+////            } else {
+////                (nextTickGrid as MutableMap)[location] = cell
+////            }
+//        }
+    }
+
+    fun getCellAt(index: Int) : CELL? {
+        return currentTickGrid[index]
+    }
+
+    fun getCurrentTickGrid() : Array<CELL?> {
+        return currentTickGrid
     }
 
     fun clear() {
-        prepare { next, permission ->
-            next.clear()
-        }
+        nextTickGrid.fill(null)
+//        prepare { next, permission ->
+//            next.fill(null)
+//        }
     }
 
     abstract fun getWorldUpdateTask(permission: UUID) : ChainedWorldUpdateAction<out AbstractWorld<out CELL>>
 
     private fun update() {
-        prepare { next, permission ->
-//            val task = getWorldUpdateTask(permission)
-            // .addTask(CollisionResolverTask().withInput(collisions.keys))
-//            pool.invoke(task)
-//            task.update()
-            uuu.run(this as GameOfLifeWorld, permission)
-//            uuu.runGPU(this as GameOfLifeWorld, permission)
-            count.incrementAndGet()
-        }
+        uuu.runWithNoPermission(this)
+        currentTickGrid = nextTickGrid
+        nextTickGrid = getArray()
+        currentAliveCellIndices = nextAliveCellIndices
+        nextAliveCellIndices = ConcurrentLinkedQueue<Int>()
+        count.incrementAndGet()
+//        prepare { next, permission ->
+////            val task = getWorldUpdateTask(permission)
+//            // .addTask(CollisionResolverTask().withInput(collisions.keys))
+////            pool.invoke(task)
+////            task.update()
+//            uuu.run(this as GameOfLifeWorld, permission)
+////            uuu.runGPU(this as GameOfLifeWorld, permission)
+//            count.incrementAndGet()
+//        }
     }
 
-    private fun prepare(action: (MutableMap<Location, CELL>, UUID) -> Unit) {
-        lock.prepareLock { permission ->
-            action.invoke(nextTickGrid as MutableMap, permission)
-            currentTickGrid = nextTickGrid
-            nextTickGrid = getNewNextTickGrid()
-            collisions.clear()
-        }
-    }
-
-    private fun getNewNextTickGrid(content: Map<Location, CELL>? = null) : MutableMap<Location, CELL> {
-        return if (content == null) {
-            ConcurrentHashMap()
-        } else {
-            ConcurrentHashMap(content)
-        }
-    }
+//    private fun prepare(action: (Array<CELL?>, UUID) -> Unit) {
+//        lock.prepareLock { permission ->
+//            action.invoke(nextTickGrid, permission)
+//            currentTickGrid = nextTickGrid
+//            nextTickGrid.fill(null)
+//        }
+//    }
 }
