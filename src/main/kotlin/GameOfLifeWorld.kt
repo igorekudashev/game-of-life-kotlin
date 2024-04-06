@@ -8,7 +8,7 @@ class GameOfLifeWorld : AbstractWorld<Cell>() {
         return Cell()
     }
 
-    override fun getWorldUpdateTask(permission: UUID): ForkJoinTask<*> {
-        return FullAction(this, currentTickGrid.keys.toList(), permission)
+    override fun getWorldUpdateTask(): ForkJoinTask<*> {
+        return FullAction(this)
     }
 }

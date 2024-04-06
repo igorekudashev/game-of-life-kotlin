@@ -37,10 +37,11 @@ abstract class AbstractGameWindow<CELL>(title: String, world: AbstractWorld<CELL
         val g2d = bufferImage.graphics
 
         g2d.fillRect(0, 0, width, height)
-        val grid = world.currentTickGrid
+        val copy = world.currentTickGrid
+        // TODO: copyOf?
         for (i in 0 until GameSetting.worldWidth) {
             for (j in 0 until GameSetting.worldHeight) {
-                val cell = grid[Location(i, j)]
+                val cell = copy[i, j]
                 val x = i * GameSetting.cellSize
                 val y = j * GameSetting.cellSize
                 if (cell != null) {

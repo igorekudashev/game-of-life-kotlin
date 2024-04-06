@@ -24,12 +24,10 @@ class GameSetting private constructor() {
         var borderSize: Int = 0; private set
 //        var neighbourCellsToLive: IntSetImitator = IntSetImitator(2, 3, 4, 5, 6, 7); private set
 //        var neighbourCellsToBeBorn: IntSetImitator = IntSetImitator(3); private set
-//        var neighbourCellsToLive: List<Int> = listOf(2, 3, 4, 5, 6, 7); private set
-//        var neighbourCellsToBeBorn: List<Int> = listOf(3); private set
+        var neighbourCellsToLive: List<Int> = listOf(2, 3); private set
+        var neighbourCellsToBeBorn: List<Int> = listOf(3); private set
 //        var neighbourCellsToLive: Array<Boolean> = arrayOf(false, false, true, true, true, true, true, true, false); private set
 //        var neighbourCellsToBeBorn: Array<Boolean> = arrayOf(false, false, false, true, false, false, false, false, false); private set
-        var neighbourCellsToLive: Array<Boolean> = arrayOf(false, false, true, true, false, false, false, false, false); private set
-        var neighbourCellsToBeBorn: Array<Boolean> = arrayOf(false, false, false, true, false, false, false, false, false); private set
         var lifespan: Int = 0; private set
         var maxFps: Int = 144; private set
         var worldThreads: Int = 16; private set
