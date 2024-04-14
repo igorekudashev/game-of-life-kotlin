@@ -1,29 +1,5 @@
 package base
 
-import java.util.*
-import java.util.concurrent.ConcurrentLinkedQueue
-
-//fun getIndexByLocation(x: Int, y: Int) : Int {
-//    return normalizeY(y) * GameSetting.worldWidth + normalizeX(x)
-//}
-//
-//fun getXByIndex(index: Int) : Int {
-//    val y = getYByIndex(index)
-//    return index - y * GameSetting.worldWidth
-//}
-//
-//fun getYByIndex(index: Int) : Int {
-//    return index / GameSetting.worldWidth
-//}
-//
-//private fun normalizeX(x: Int) : Int {
-//    return normalizeInt(x, GameSetting.worldWidth)
-//}
-//
-//private fun normalizeY(y: Int) : Int {
-//    return normalizeInt(y, GameSetting.worldHeight)
-//}
-
 class CellGrid<CELL : AbstractCell?> {
 
     val height: Int
@@ -43,24 +19,23 @@ class CellGrid<CELL : AbstractCell?> {
     }
 
     operator fun get(index: Int): CELL? {
-        return grid[index] as CELL?
+        return grid[normalizeInt(index, size())] as CELL?
     }
 
     operator fun get(x: Int, y: Int) : CELL? {
-        return this[getIndexByLocation(x, y)]
+        return grid[getIndexByLocation(x, y)] as CELL?
     }
 
     operator fun set(index: Int, value: CELL?) {
-        grid[index] = value
+        grid[normalizeInt(index, size())] = value
     }
 
     operator fun set(x: Int, y: Int, value: CELL?) {
-        this[getIndexByLocation(x, y)] = value
+        grid[getIndexByLocation(x, y)] = value
     }
 
     fun getXByIndex(index: Int) : Int {
-        val y = getYByIndex(index)
-        return index - y * width
+        return index % width
     }
 
     fun getYByIndex(index: Int) : Int {
@@ -79,8 +54,18 @@ class CellGrid<CELL : AbstractCell?> {
         return normalizeInt(y, height)
     }
 
+    fun getIndexRelativeTo(index: Int, offsetX: Int, offsetY: Int) : Int {
+        val indexWithOffsetY = index + (offsetY * width)
+        val x = index % width
+        val newX = normalizeInt(x + offsetX, width)
+        return indexWithOffsetY - x + newX
+    }
+
     fun clear() {
-        grid.fill(null)
+        // TODO: -5-10 fps
+        synchronized(this) {
+            grid.fill(null)
+        }
     }
 
     fun size() : Int {
@@ -88,7 +73,10 @@ class CellGrid<CELL : AbstractCell?> {
     }
 
     fun copy() : CellGrid<CELL?> {
-        return CellGrid(height, width, grid.copyOf())
+        // TODO: -5-10 fps
+        synchronized(this) {
+            return CellGrid(height, width, grid.copyOf())
+        }
     }
 
     override fun toString(): String {

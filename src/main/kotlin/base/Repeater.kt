@@ -1,8 +1,6 @@
 package base
 
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
 
 private const val MAX_SPEED: Int = 1000
 
@@ -12,7 +10,7 @@ class Repeater(
 ) {
 
     private val executor = Executors.newSingleThreadScheduledExecutor()
-    private lateinit var future: ScheduledFuture<*>
+    private var future: Future<*> = CompletableFuture<Any>()
 
     init {
         startJob()

@@ -9,9 +9,14 @@ import javax.swing.JFrame
 
 abstract class AbstractGameWindow<CELL>(title: String, world: AbstractWorld<CELL>) : JFrame(title) where CELL : AbstractCell {
 
+    protected abstract val keyListener: AbstractGameKeyListener
+
     protected val world: AbstractWorld<CELL>
-    private val repeater = Repeater(maxFps) { repaint() }
-    private val bufferImage: VolatileImage
+    private val repeater = Repeater(0) { repaint() }
+    private lateinit var bufferImage: VolatileImage
+
+    var offsetX: Int = 0
+    var offsetY: Int = 0
 
     init {
         this.world = world
@@ -21,29 +26,31 @@ abstract class AbstractGameWindow<CELL>(title: String, world: AbstractWorld<CELL
         isResizable = false
         isVisible = true
         size = getScreenSize()
-        addKeyListener(getGameKeyListener())
-        bufferImage = createVolatileImage(width, height)
     }
 
     abstract fun paintCell(graphics: Graphics, cell: CELL, x: Int, y: Int)
 
-    abstract fun getGameKeyListener() : AbstractGameKeyListener
-
     fun setFps(fps: Int) {
         repeater.setSpeed(fps.coerceIn(0, maxFps))
+    }
+
+    fun start() {
+        addKeyListener(keyListener)
+        bufferImage = createVolatileImage(width, height)
+        repeater.setSpeed(DEFAULT_UPDATE_SPEED)
     }
 
     final override fun paint(graphics: Graphics) {
         val g2d = bufferImage.graphics
 
         g2d.fillRect(0, 0, width, height)
-        val copy = world.currentTickGrid
+        val copy = world.currentTickGrid.copy()
         // TODO: copyOf?
         for (i in 0 until GameSetting.worldWidth) {
             for (j in 0 until GameSetting.worldHeight) {
                 val cell = copy[i, j]
-                val x = i * GameSetting.cellSize
-                val y = j * GameSetting.cellSize
+                val x = normalizeInt(i + offsetX * 2, GameSetting.worldWidth) * GameSetting.cellSize
+                val y = normalizeInt(j + offsetY * 2, GameSetting.worldHeight) * GameSetting.cellSize
                 if (cell != null) {
                     paintCell(g2d, cell, x, y)
                 }

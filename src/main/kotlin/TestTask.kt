@@ -6,11 +6,13 @@ import java.util.concurrent.ForkJoinTask
 import java.util.concurrent.RecursiveAction
 import java.util.concurrent.RecursiveTask
 import java.util.stream.Collectors
+import java.util.stream.Stream
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.math.ceil
+import kotlin.math.sign
 
-private const val min: Int = 2500
+private const val min: Int = 16000
 
 class TestTask(
         private val world: GameOfLifeWorld,
@@ -19,7 +21,6 @@ class TestTask(
 ) : RecursiveTask<Map<Int, Int>>() {
 
     override fun compute() : Map<Int, Int> {
-        // TODO: попробовать вариант с разделением на таски за раз и вариант с рекурсивным разделением
         return if (to - from > min) {
             ForkJoinTask.invokeAll(getSubTask()).stream()
                 .map { it.join() }
@@ -33,22 +34,22 @@ class TestTask(
     private fun getSubTask() : List<TestTask> {
         val subTasks = ArrayList<TestTask>()
         for (i in from until to step min) {
-            subTasks.add(TestTask(world, i, i + min))
+            subTasks.add(TestTask(world, i, (i + min).coerceAtMost(world.currentTickGrid.size())))
         }
         return subTasks
     }
 
     private fun processGridRegionUpdate() : Map<Int, Int> {
         val candidatesToReborn = HashMap<Int, Int>()
+
         for (i in from until to) {
             if (world.currentTickGrid[i] == null) continue
+
             var aliveNeighbours = 0
-            val curX = world.currentTickGrid.getXByIndex(i)
-            val curY = world.currentTickGrid.getYByIndex(i)
+
             for (direction in Direction.entries) {
-                val neighbourIndex = world.currentTickGrid.getIndexByLocation(curX + direction.deltaX, curY + direction.deltaY)
-                val neighbourCell = world.currentTickGrid[neighbourIndex]
-                if (neighbourCell != null) {
+                val neighbourIndex = world.currentTickGrid.getIndexRelativeTo(i, direction.deltaX, direction.deltaY)
+                if (world.currentTickGrid[neighbourIndex] != null) {
                     aliveNeighbours++
                 } else {
                     candidatesToReborn.merge(neighbourIndex, 1, Int::plus)

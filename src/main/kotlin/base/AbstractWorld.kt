@@ -8,21 +8,23 @@ import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 
-private const val DEFAULT_UPDATE_SPEED: Int = 1
+const val DEFAULT_UPDATE_SPEED: Int = 1
 
 abstract class AbstractWorld<CELL : AbstractCell> {
 
     var currentTickGrid = CellGrid<CELL?>(worldHeight, worldWidth); private set
     var nextTickGrid = CellGrid<CELL?>(worldHeight, worldWidth); private set
+    var updatesPerSecond: Int = DEFAULT_UPDATE_SPEED; private set
 
     private val lock: PermissionLock = PermissionLock()
-    private val repeater = Repeater(DEFAULT_UPDATE_SPEED) { update() }
+    private val repeater = Repeater(0) { update() }
     private val pool: ForkJoinPool = ForkJoinPool(worldThreads)
-    private var updatesPerSecond: Int = DEFAULT_UPDATE_SPEED
     private var count: AtomicInteger = AtomicInteger(0)
 
     init {
         randomize(50)
+
+        repeater.setSpeed(updatesPerSecond)
 
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate({
             println("Method was called $count times in the last second")
