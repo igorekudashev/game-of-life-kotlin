@@ -11,6 +11,7 @@ abstract class AbstractGameKeyListener : KeyListener {
     }
 
     final override fun keyPressed(e: KeyEvent?) {
+        println(e?.keyCode)
         val gameKey = getKey(e?.keyCode ?: -1)
         onGameKeyPressed(gameKey)
     }

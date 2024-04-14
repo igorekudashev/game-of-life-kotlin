@@ -1,91 +1,97 @@
-//import base.*
-//import base.GameSetting.Companion.neighbourCellsToBeBorn
-//import base.GameSetting.Companion.neighbourCellsToLive
-//import java.util.concurrent.ConcurrentHashMap
-//import java.util.concurrent.ForkJoinTask
-//import java.util.concurrent.RecursiveAction
-//import java.util.concurrent.RecursiveTask
-//import java.util.stream.Collectors
-//import kotlin.math.ceil
-//
-//private const val min: Int = 2500
-//
-//private fun <K, V> splitMap(map: Map<K, V>, size: Int) : List<Map<K, V>> {
-//    val result = mutableListOf<Map<K, V>>()
-//    var current = HashMap<K, V>()
-//    map.forEach { (k, v) ->
-//        current[k] = v
-//        if (current.size == size) {
-//            result.add(current)
-//            current = HashMap()
-//        }
-//    }
-//    if (current.isNotEmpty()) {
-//        result.add(current)
-//    }
-//    return result
-//}
-//
-//class TestTask : LateInitInputRecursiveTask<List<Location>, Map<Location, Int>, GameOfLifeWorld>() {
-//
-//    override fun requiresFork(): Boolean {
-//        return input.size > min
-//    }
-//
-//    override fun getSubTasks(): List<TestTask> {
-//        return input.chunked(2500).map {
-//            val task = TestTask()
-//            task.prepare(context, it)
-//            task
-//        }
-//    }
-//
-//    override fun process(): Map<Location, Int> {
-//        val candidatesToReborn = HashMap<Location, Int>()
-//        input.forEach { location ->
-//            var aliveNeighbours = 0
-//            for (direction in Direction.values()) {
-//                val neighbourLocation = location.getRelative(direction)
-//                val neighbourCell = context.world.getCellAt(neighbourLocation)
-//                if (neighbourCell != null) {
-//                    aliveNeighbours++
-//                } else {
-//                    candidatesToReborn.merge(neighbourLocation, 1, Int::plus)
-//                }
-//            }
-////            if (neighbourCellsToLive.contains(aliveNeighbours)) {
-//            if (aliveNeighbours in neighbourCellsToLive) {
-//                context.world.addCellNoNextTick(location, context.world.getCellAt(location)!!)
-//            }
-//        }
-//        return candidatesToReborn
-//    }
-//
-//    override fun merge(outputs: List<Map<Location, Int>>): Map<Location, Int> {
-//        return outputs.stream().flatMap {
-//            it.entries.stream()
-//        }.collect(Collectors.toMap({ it.key }, { it.value }, Int::plus))
-//    }
-//}
-//
-//class TestAction: LateInitInputRecursiveAction<Map<Location, Int>, GameOfLifeWorld>() {
-//    override fun requiresFork(): Boolean {
-//        return input.size > min
-//    }
-//
-//    override fun getSubTasks(): List<TestAction> {
-//        return splitMap(input, 500).map {
-//            val task = TestAction()
-//            task.prepare(context, it)
-//            task
-//        }
-//    }
-//
-//    override fun process() {
-//        input.entries.stream()
-//            .filter { (_, aliveNeighbours) -> aliveNeighbours in neighbourCellsToBeBorn }
-//            .forEach { (location, _) ->
-//                context.world.addCellNoNextTick(location, Cell())
-//            }
-//    }
-//}
+import base.*
+import base.GameSetting.Companion.neighbourCellsToBeBorn
+import base.GameSetting.Companion.neighbourCellsToLive
+import java.util.*
+import java.util.concurrent.ForkJoinTask
+import java.util.concurrent.RecursiveAction
+import java.util.concurrent.RecursiveTask
+import java.util.stream.Collectors
+import java.util.stream.Stream
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
+import kotlin.math.ceil
+import kotlin.math.sign
+
+private const val min: Int = 16000
+
+class TestTask(
+        private val world: GameOfLifeWorld,
+        private val from: Int,
+        private val to: Int
+) : RecursiveTask<Map<Int, Int>>() {
+
+    override fun compute() : Map<Int, Int> {
+        return if (to - from > min) {
+            ForkJoinTask.invokeAll(getSubTask()).stream()
+                .map { it.join() }
+                .flatMap { it.entries.stream() }
+                .collect(Collectors.toMap({ entry -> entry.key }, { entry -> entry.value }, Int::plus))
+        } else {
+            processGridRegionUpdate()
+        }
+    }
+
+    private fun getSubTask() : List<TestTask> {
+        val subTasks = ArrayList<TestTask>()
+        for (i in from until to step min) {
+            subTasks.add(TestTask(world, i, (i + min).coerceAtMost(world.currentTickGrid.size())))
+        }
+        return subTasks
+    }
+
+    private fun processGridRegionUpdate() : Map<Int, Int> {
+        val candidatesToReborn = HashMap<Int, Int>()
+
+        for (i in from until to) {
+            if (world.currentTickGrid[i] == null) continue
+
+            var aliveNeighbours = 0
+
+            for (direction in Direction.entries) {
+                val neighbourIndex = world.currentTickGrid.getIndexRelativeTo(i, direction.deltaX, direction.deltaY)
+                if (world.currentTickGrid[neighbourIndex] != null) {
+                    aliveNeighbours++
+                } else {
+                    candidatesToReborn.merge(neighbourIndex, 1, Int::plus)
+                }
+            }
+            if (aliveNeighbours in neighbourCellsToLive) {
+                world.nextTickGrid[i] = world.currentTickGrid[i]
+            }
+        }
+        return candidatesToReborn
+    }
+}
+
+class TestAction(
+        private val world: GameOfLifeWorld,
+        private val neighboursCounter: Map<Int, Int>,
+        private val countedCellIndices: List<Int>
+) : RecursiveAction() {
+
+    override fun compute() {
+        if (countedCellIndices.size > min) {
+            ForkJoinTask.invokeAll(getSubTask()).forEach { it.join() }
+        } else {
+            countedCellIndices.stream()
+                    .map { it to neighboursCounter[it] }
+                    .filter { (_, aliveNeighbours) -> aliveNeighbours in neighbourCellsToBeBorn }
+                    .forEach { (i, _) -> world.nextTickGrid[i] = Cell() }
+        }
+    }
+
+    private fun getSubTask() : List<TestAction> {
+        val size = ceil(countedCellIndices.size / 10f).toInt()
+        return countedCellIndices.chunked(size).map { TestAction(world, neighboursCounter, it) }
+    }
+}
+
+class FullAction(
+        private val world: GameOfLifeWorld
+) : RecursiveAction() {
+
+    override fun compute() {
+        val output = TestTask(world,0, world.currentTickGrid.size()).fork().join()
+        TestAction(world, output, output.keys.toList()).fork().join()
+    }
+}

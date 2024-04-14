@@ -8,22 +8,50 @@ class GameOfLifeKeyListener(
     private val world: AbstractWorld<*>
 ) : AbstractGameKeyListener() {
 
+    private var isPaused: Boolean = false
+    private var worldUpdateSpeed: Int = 0
+
     override fun onGameKeyPressed(gameKey: GameKey) {
+        println("in $gameKey")
         when (gameKey) {
-            GameKey.KEY_R -> {
+            GameKey.R -> {
                 world.randomize(50)
-                gameWindow.repaint()
+//                gameWindow.repaint()
             }
-            GameKey.KEY_PLUS -> {
-                val worldUpdatesPerSecond = world.changeUpdateSpeed(10)
+            GameKey.PLUS -> {
+                if (isPaused) return
+                val worldUpdatesPerSecond = world.changeUpdateSpeed(50)
                 gameWindow.setFps(worldUpdatesPerSecond)
             }
-            GameKey.KEY_MINUS -> {
-                val worldUpdatesPerSecond = world.changeUpdateSpeed(-10)
+            GameKey.MINUS -> {
+                if (isPaused) return
+                val worldUpdatesPerSecond = world.changeUpdateSpeed(-50)
                 gameWindow.setFps(worldUpdatesPerSecond)
             }
-            GameKey.KEY_C -> {
+            GameKey.C -> {
                 world.clear()
+            }
+            GameKey.ARROW_LEFT -> {
+                gameWindow.offsetX++
+            }
+            GameKey.ARROW_UP -> {
+                gameWindow.offsetY++
+            }
+            GameKey.ARROW_RIGHT -> {
+                gameWindow.offsetX--
+            }
+            GameKey.ARROW_DOWN -> {
+                gameWindow.offsetY--
+            }
+            GameKey.P -> {
+                if (isPaused) {
+                    world.changeUpdateSpeed(worldUpdateSpeed)
+                } else {
+                    worldUpdateSpeed = world.updatesPerSecond
+                    println(worldUpdateSpeed)
+                    println(world.changeUpdateSpeed(-worldUpdateSpeed))
+                }
+                isPaused = !isPaused
             }
             else -> {}
         }
