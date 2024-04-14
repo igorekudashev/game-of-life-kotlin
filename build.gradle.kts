@@ -7,6 +7,7 @@ plugins {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
+    implementation("com.aparapi:aparapi:3.0.0")
 }
 repositories {
     mavenCentral()
